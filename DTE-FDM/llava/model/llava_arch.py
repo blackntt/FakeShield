@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 import torch
 import torch.nn as nn
 
-from .multimodal_encoder.builder import build_vision_tower
+from .multimodal_encoder.builder import build_noiseprint_projector, build_vision_tower
 from .multimodal_projector.builder import build_vision_projector
 
 from llava.constants import IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
@@ -34,11 +34,14 @@ class LlavaMetaModel:
         if hasattr(config, "mm_vision_tower"):
             self.vision_tower = build_vision_tower(config, delay_load=True)
             self.mm_projector = build_vision_projector(config)
+            
 
             if 'unpad' in getattr(config, 'mm_patch_merge_type', ''):
                 self.image_newline = nn.Parameter(
                     torch.empty(config.hidden_size, dtype=self.dtype)
                 )
+        if hasattr(config, "noiseprint_projector_path"):
+            self.noiseprint_projector = build_noiseprint_projector(config)
 
     def get_vision_tower(self):
         vision_tower = getattr(self, 'vision_tower', None)
@@ -68,6 +71,8 @@ class LlavaMetaModel:
             else:
                 vision_tower = self.vision_tower
             vision_tower.load_model()
+        if self.noiseprint_projector is None:
+            self.noiseprint_projector = build_noiseprint_projector(model_args)
 
         self.config.use_mm_proj = True
         self.config.mm_projector_type = getattr(model_args, 'mm_projector_type', 'linear')
@@ -155,13 +160,18 @@ class LlavaMetaForCausalLM(ABC):
                 images = [x.unsqueeze(0) if x.ndim == 3 else x for x in images]
             concat_images = torch.cat([image for image in images], dim=0)
             image_features = self.encode_images(concat_images)
+            freq_features = self.noiseprint_projector(concat_images) # [B, 64, 4096]
             split_sizes = [image.shape[0] for image in images]
             image_features = torch.split(image_features, split_sizes, dim=0)
+            freq_features = torch.split(freq_features, split_sizes, dim=0)
+            # freq_features = [f[0] for f in freq_features]
             mm_patch_merge_type = getattr(self.config, 'mm_patch_merge_type', 'flat')
             image_aspect_ratio = getattr(self.config, 'image_aspect_ratio', 'square')
             if mm_patch_merge_type == 'flat':
                 image_features = [x.flatten(0, 1) for x in image_features]
+                freq_features = [x.flatten(0, 1) for x in freq_features]
             elif mm_patch_merge_type.startswith('spatial'):
+                freq_features = [x[0] for x in freq_features]
                 new_image_features = []
                 for image_idx, image_feature in enumerate(image_features):
                     if image_feature.shape[0] > 1:
@@ -200,6 +210,7 @@ class LlavaMetaForCausalLM(ABC):
                 raise ValueError(f"Unexpected mm_patch_merge_type: {self.config.mm_patch_merge_type}")
         else:
             image_features = self.encode_images(images)
+            freq_features = self.noiseprint_projector(images) # [B, 64, D]
 
         # TODO: image start / end is not implemented here to support pretraining.
         if getattr(self.config, 'tune_mm_mlp_adapter', False) and getattr(self.config, 'mm_use_im_start_end', False):
@@ -258,9 +269,13 @@ class LlavaMetaForCausalLM(ABC):
                 cur_new_labels.append(cur_labels_noim[i])
                 if i < num_images:
                     cur_image_features = image_features[cur_image_idx]
+                    cur_freq_features = freq_features[cur_image_idx] # [64, D]
+                    if cur_freq_features.ndim == 3:
+                        cur_freq_features = cur_freq_features.squeeze(0)
+                    combined_visual_features = torch.cat([cur_image_features, cur_freq_features], dim=0)
                     cur_image_idx += 1
-                    cur_new_input_embeds.append(cur_image_features)
-                    cur_new_labels.append(torch.full((cur_image_features.shape[0],), IGNORE_INDEX, device=cur_labels.device, dtype=cur_labels.dtype))
+                    cur_new_input_embeds.append(combined_visual_features)
+                    cur_new_labels.append(torch.full((combined_visual_features.shape[0],), IGNORE_INDEX, device=cur_labels.device, dtype=cur_labels.dtype))
 
             cur_new_input_embeds = [x.to(self.device) for x in cur_new_input_embeds]
 
