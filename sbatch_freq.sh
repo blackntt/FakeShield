@@ -58,7 +58,8 @@ PYTHON="/datastore/cndt_toannt/miniconda/envs/fakeshield_env_new/bin/python"
 PYTHON2="/datastore/cndt_toannt/miniconda/envs/fakeshield_env/bin/python"
 
 OUTPUT_DIR=./playground/DTE-FDM_train_result
-DATA_PATH=path_to_your_train_data
+DATA_PATH=dataset.json
+IMAGE_PATH=dataset
 WEIGHT_PATH=./weight/fakeshield-v1-22b/DTE-FDM
 FREQ_MODEL_PATH=/datastore/cndt_toannt/FakeShield/weight/noiseprint.th
 
@@ -69,7 +70,7 @@ deepspeed --include localhost:0,1,2,3 --master_port=29501 ./DTE-FDM/llava/train/
   --model_name_or_path $WEIGHT_PATH \
   --version v1 \
   --data_path $DATA_PATH \
-  --image_folder / \
+  --image_folder $IMAGE_PATH \
   --vision_tower openai/clip-vit-large-patch14-336 \
   --mm_projector_type mlp2x_gelu \
   --mm_vision_select_layer -2 \
