@@ -1,4 +1,3 @@
-*.pyc
 weight/
 dataset
 mmcv
