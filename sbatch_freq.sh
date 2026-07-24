@@ -63,6 +63,8 @@ IMAGE_PATH=dataset
 WEIGHT_PATH=./weight/fakeshield-v1-22b/DTE-FDM
 FREQ_MODEL_PATH=/datastore/cndt_toannt/FakeShield/weight/noiseprint.th
 
+export TRANSFORMERS_OFFLINE=1
+export HF_HUB_OFFLINE=1
 mkdir -p $OUTPUT_DIR
 "$PYTHON" ./DTE-FDM/llava/train/train_mem.py \
   --lora_enable True --lora_r 128 --lora_alpha 256 --mm_projector_lr 2e-5 \
