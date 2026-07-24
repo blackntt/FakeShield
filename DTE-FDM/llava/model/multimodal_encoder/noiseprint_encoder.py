@@ -30,7 +30,19 @@ class NoiseprintProjector(nn.Module):
         )
 
     def _load_noiseprint(self, weights_path):
-        model = DnCNN(in_nc=1, out_nc=1, nc=64, nb=17, act_mode='BR')
+        # Khởi tạo DnCNN bằng các tham số tương ứng của class DnCNN gốc:
+        # nplanes_in=1, nplanes_out=1, features=64, kernel=3, depth=17, activation='relu', residual=True, bn=True
+        model = DnCNN(
+            nplanes_in=1,
+            nplanes_out=1,
+            features=64,
+            kernel=3,
+            depth=17,
+            activation='relu',
+            residual=True,
+            bn=True
+        )
+        
         state_dict = torch.load(weights_path, map_location='cpu')
         if 'noiseprint' in state_dict:
             state_dict = state_dict['noiseprint']
