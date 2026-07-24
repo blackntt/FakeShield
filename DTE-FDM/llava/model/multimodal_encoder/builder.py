@@ -12,6 +12,5 @@ def build_vision_tower(vision_tower_cfg, **kwargs):
 
 
 def build_noiseprint_projector(noiseprint_cfg, **kwargs):
-    weights_path = getattr(noiseprint_cfg, 'noiseprint_projector_path', None)
-    weights_path = weights_path or "weights/np_plus_plus.pt"
+    weights_path = getattr(noiseprint_cfg, 'noiseprint_projector_path', "/datastore/cndt_toannt/FakeShield/weight/noiseprint.th")
     return NoiseprintProjector(weights_path=weights_path, mm_hidden_size=getattr(noiseprint_cfg, 'noiseprint_projector_mm_hidden_size', 4096), num_tokens=getattr(noiseprint_cfg, 'noiseprint_projector_num_tokens', 64))
