@@ -56,7 +56,7 @@ mkdir -p $CUDA_MPS_PIPE_DIRECTORY $CUDA_MPS_LOG_DIRECTORY
 #training.real_loss_fomulas=uniform
 PYTHON="/datastore/cndt_toannt/miniconda/envs/fakeshield_env_new/bin/python"
 PYTHON2="/datastore/cndt_toannt/miniconda/envs/fakeshield_env/bin/python"
-
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 OUTPUT_DIR=./playground/DTE-FDM_train_result
 DATA_PATH=dataset.json
 IMAGE_PATH=dataset
