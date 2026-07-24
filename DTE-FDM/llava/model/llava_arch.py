@@ -40,8 +40,7 @@ class LlavaMetaModel:
                 self.image_newline = nn.Parameter(
                     torch.empty(config.hidden_size, dtype=self.dtype)
                 )
-        if hasattr(config, "noiseprint_projector_path"):
-            self.noiseprint_projector = build_noiseprint_projector(config)
+        self.noiseprint_projector = build_noiseprint_projector(config)
 
     def get_vision_tower(self):
         vision_tower = getattr(self, 'vision_tower', None)
