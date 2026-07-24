@@ -62,6 +62,7 @@ DATA_PATH=dataset.json
 IMAGE_PATH=dataset
 WEIGHT_PATH=./weight/fakeshield-v1-22b/DTE-FDM
 FREQ_MODEL_PATH=/datastore/cndt_toannt/FakeShield/weight/noiseprint.th
+CLIP_PATH=/datastore/cndt_toannt/FakeShield/weight/clip
 
 mkdir -p $OUTPUT_DIR
 "$PYTHON" ./DTE-FDM/llava/train/train_mem.py \
@@ -71,7 +72,7 @@ mkdir -p $OUTPUT_DIR
   --version v1 \
   --data_path $DATA_PATH \
   --image_folder $IMAGE_PATH \
-  --vision_tower openai/clip-vit-large-patch14-336 \
+  --vision_tower $CLIP_PATH \
   --mm_projector_type mlp2x_gelu \
   --mm_vision_select_layer -2 \
   --mm_use_im_start_end False \
