@@ -30,8 +30,6 @@ class NoiseprintProjector(nn.Module):
         )
 
     def _load_noiseprint(self, weights_path):
-        # Khởi tạo DnCNN bằng các tham số tương ứng của class DnCNN gốc:
-        # nplanes_in=1, nplanes_out=1, features=64, kernel=3, depth=17, activation='relu', residual=True, bn=True
         model = DnCNN(
             nplanes_in=1,
             nplanes_out=1,
@@ -39,14 +37,29 @@ class NoiseprintProjector(nn.Module):
             kernel=3,
             depth=17,
             activation='relu',
-            residual=True,
-            bn=True
+            residual=False,  # Đổi sang False nếu checkpoint gốc không dùng residual
+            bn=False         # Đổi sang False nếu checkpoint gốc không dùng BatchNorm
         )
-        
+
         state_dict = torch.load(weights_path, map_location='cpu')
+
+        # 1. Bóc tách các wrapper lồng nhau trong checkpoint
         if 'noiseprint' in state_dict:
             state_dict = state_dict['noiseprint']
-        model.load_state_dict(state_dict)
+        if 'network' in state_dict:
+            state_dict = state_dict['network']
+        if 'state_dict' in state_dict:
+            state_dict = state_dict['state_dict']
+
+        # 2. Xóa các tiền tố thừa (ví dụ 'module.' hoặc 'model.') nếu có
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            name = k.replace('module.', '').replace('model.', '')
+            new_state_dict[name] = v
+
+        # 3. Load trọng số với strict=False để bỏ qua các key thừa như global_step
+        model.load_state_dict(new_state_dict, strict=False)
+
         model.eval()
         for param in model.parameters():
             param.requires_grad = False
