@@ -98,8 +98,7 @@ mkdir -p $OUTPUT_DIR
   --gradient_checkpointing True \
   --dataloader_num_workers 4 \
   --lazy_preprocess True \
-  --report_to wandb
-# new noiseprinter project
---noiseprint_projector_path $FREQ_MODEL_PATH \
+  --report_to wandb \
+  --noiseprint_projector_path $FREQ_MODEL_PATH \
   --noiseprint_projector_mm_hidden_size 4096 \
   --noiseprint_projector_num_tokens 64
